@@ -161,7 +161,7 @@ cython_debug/
 
 
 .DS_Store
-*.ipynb
+# *.ipynb
 *.pth 
 *.pdparams
 *.onnx
@@ -170,3 +170,4 @@ rtdetr_pytorch/output/
 rtdetr_pytorch/dataset/
 rtdetrv2_pytorch/output/
 rtdetrv2_pytorch/dataset/
+coco2017/
