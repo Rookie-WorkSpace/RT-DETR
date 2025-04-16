@@ -1,4 +1,4 @@
-"""by lyuwenyu
+"""作者: lyuwenyu
 """
 
 import os 
@@ -15,7 +15,7 @@ import torch.nn as nn
 
 
 def main(args, ):
-    """main
+    """主函数
     """
     cfg = YAMLConfig(args.config, resume=args.resume)
 
@@ -26,9 +26,9 @@ def main(args, ):
         else:
             state = checkpoint['model']
     else:
-        raise AttributeError('only support resume to load model.state_dict by now.')
+        raise AttributeError('目前仅支持从检查点加载模型状态字典')
 
-    # NOTE load train mode state -> convert to deploy mode
+    # 注意: 加载训练模式状态 -> 转换为部署模式
     cfg.model.load_state_dict(state)
 
     class Model(nn.Module):
@@ -69,7 +69,7 @@ def main(args, ):
         import onnx
         onnx_model = onnx.load(args.file_name)
         onnx.checker.check_model(onnx_model)
-        print('Check export onnx model done...')
+        print('检查导出的ONNX模型完成...')
 
 
     if args.simplify:
@@ -78,7 +78,7 @@ def main(args, ):
         input_shapes = {'images': data.shape, 'orig_target_sizes': size.shape} if dynamic else None
         onnx_model_simplify, check = onnxsim.simplify(args.file_name, input_shapes=input_shapes, dynamic_input_shape=dynamic)
         onnx.save(onnx_model_simplify, args.file_name)
-        print(f'Simplify onnx model {check}...')
+        print(f'简化ONNX模型 {check}...')
 
 
     # import onnxruntime as ort 
@@ -88,11 +88,11 @@ def main(args, ):
 
     # # print(onnx.helper.printable_graph(mm.graph))
 
-    # # Load the original image without resizing
+    # # 加载原始图像,不调整大小
     # original_im = Image.open('./hongkong.jpg').convert('RGB')
     # original_size = original_im.size
 
-    # # Resize the image for model input
+    # # 调整图像大小用于模型输入
     # im = original_im.resize((640, 640))
     # im_data = ToTensor()(im)[None]
     # print(im_data.shape)
@@ -109,7 +109,7 @@ def main(args, ):
 
     # labels, boxes, scores = output
 
-    # draw = ImageDraw.Draw(original_im)  # Draw on the original image
+    # draw = ImageDraw.Draw(original_im)  # 在原始图像上绘制
     # thrh = 0.6
 
     # for i in range(im_data.shape[0]):
@@ -121,15 +121,15 @@ def main(args, ):
     #     print(i, sum(scr > thrh))
 
     #     for b, l in zip(box, lab):
-    #         # Scale the bounding boxes back to the original image size
+    #         # 将边界框坐标缩放回原始图像大小
     #         b = [coord * original_size[j % 2] / 640 for j, coord in enumerate(b)]
-    #         # Get the category name from the label
+    #         # 从标签获取类别名称
     #         category_name = mscoco_category2name[mscoco_label2category[l]]
     #         draw.rectangle(list(b), outline='red', width=2)
     #         font = ImageFont.truetype("Arial.ttf", 15)
     #         draw.text((b[0], b[1]), text=category_name, fill='yellow', font=font)
 
-    # # Save the original image with bounding boxes
+    # # 保存带有边界框的原始图像
     # original_im.save('test.jpg')
 
 

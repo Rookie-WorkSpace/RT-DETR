@@ -171,3 +171,7 @@ rtdetr_pytorch/dataset/
 rtdetrv2_pytorch/output/
 rtdetrv2_pytorch/dataset/
 coco2017/
+chengdu_dataset/
+*.tar
+*.tar.gz
+log.txt

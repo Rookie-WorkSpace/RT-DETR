@@ -1,0 +1,16 @@
+# 包含其他配置文件
+__include__: [
+  # COCO数据集配置
+  '../dataset/chengdu_detection.yml',
+  # 运行时配置（如同步BN、混合精度训练等）
+  '../runtime.yml', 
+  # 数据加载器配置
+  './include/dataloader.yml',
+  # 优化器配置
+  './include/optimizer.yml',
+  # RT-DETR ResNet50-vd 模型配置
+  './include/rtdetr_r50vd.yml',
+]
+
+# 模型输出目录
+output_dir: ./output/rtdetr_r50vd_6x_chengdu

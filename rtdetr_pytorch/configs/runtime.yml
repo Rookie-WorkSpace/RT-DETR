@@ -1,17 +1,30 @@
+# 是否使用同步批归一化，在多GPU训练时建议开启
 sync_bn: True
+
+# 是否检查未使用的参数，通常在使用DDP时需要设置
 find_unused_parameters: False
 
 
+# 是否启用自动混合精度训练
 use_amp: False
 
+# 梯度缩放器配置
 scaler:
+  # 使用PyTorch的GradScaler
   type: GradScaler
+  # 是否启用梯度缩放
   enabled: True
 
 
+# 是否使用指数移动平均(EMA)
 use_ema: False
+
+# EMA配置
 ema:
+  # 使用ModelEMA实现
   type: ModelEMA
+  # EMA衰减率
   decay: 0.9999
+  # 预热步数，在此步数之前不进行EMA更新
   warmups: 2000
 

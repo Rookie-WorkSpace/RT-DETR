@@ -21,22 +21,40 @@ from src.misc import (MetricLogger, SmoothedValue, reduce_dict)
 def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
                     data_loader: Iterable, optimizer: torch.optim.Optimizer,
                     device: torch.device, epoch: int, max_norm: float = 0, **kwargs):
+    """训练一个epoch
+    
+    Args:
+        model: 模型
+        criterion: 损失函数
+        data_loader: 数据加载器
+        optimizer: 优化器
+        device: 设备
+        epoch: 当前epoch数
+        max_norm: 梯度裁剪的最大范数,默认为0表示不裁剪
+        **kwargs: 其他参数,包括print_freq(打印频率)、ema(指数移动平均)、scaler(混合精度训练的scaler)
+    
+    Returns:
+        dict: 包含所有指标的平均值
+    """
     model.train()
     criterion.train()
+    # 创建指标记录器
     metric_logger = MetricLogger(delimiter="  ")
     metric_logger.add_meter('lr', SmoothedValue(window_size=1, fmt='{value:.6f}'))
     # metric_logger.add_meter('class_error', SmoothedValue(window_size=1, fmt='{value:.2f}'))
     header = 'Epoch: [{}]'.format(epoch)
     print_freq = kwargs.get('print_freq', 10)
     
-    ema = kwargs.get('ema', None)
-    scaler = kwargs.get('scaler', None)
+    ema = kwargs.get('ema', None)  # 指数移动平均
+    scaler = kwargs.get('scaler', None)  # 混合精度训练的scaler
 
     for samples, targets in metric_logger.log_every(data_loader, print_freq, header):
+        # 将数据移到指定设备
         samples = samples.to(device)
         targets = [{k: v.to(device) for k, v in t.items()} for t in targets]
 
         if scaler is not None:
+            # 使用混合精度训练
             with torch.autocast(device_type=str(device), cache_enabled=True):
                 outputs = model(samples, targets)
             
@@ -46,6 +64,7 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
             loss = sum(loss_dict.values())
             scaler.scale(loss).backward()
             
+            # 梯度裁剪
             if max_norm > 0:
                 scaler.unscale_(optimizer)
                 torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm)
@@ -55,6 +74,7 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
             optimizer.zero_grad()
 
         else:
+            # 普通训练流程
             outputs = model(samples, targets)
             loss_dict = criterion(outputs, targets)
             
@@ -62,15 +82,17 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
             optimizer.zero_grad()
             loss.backward()
             
+            # 梯度裁剪
             if max_norm > 0:
                 torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm)
 
             optimizer.step()
         
-        # ema 
+        # 更新EMA
         if ema is not None:
             ema.update(model)
 
+        # 计算并记录损失
         loss_dict_reduced = reduce_dict(loss_dict)
         loss_value = sum(loss_dict_reduced.values())
 
@@ -82,7 +104,7 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
         metric_logger.update(loss=loss_value, **loss_dict_reduced)
         metric_logger.update(lr=optimizer.param_groups[0]["lr"])
 
-    # gather the stats from all processes
+    # 同步所有进程的统计信息
     metric_logger.synchronize_between_processes()
     print("Averaged stats:", metric_logger)
     return {k: meter.global_avg for k, meter in metric_logger.meters.items()}
@@ -91,6 +113,20 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
 
 @torch.no_grad()
 def evaluate(model: torch.nn.Module, criterion: torch.nn.Module, postprocessors, data_loader, base_ds, device, output_dir):
+    """评估函数
+    
+    Args:
+        model: 模型
+        criterion: 损失函数
+        postprocessors: 后处理器
+        data_loader: 数据加载器
+        base_ds: COCO数据集对象
+        device: 设备
+        output_dir: 输出目录
+        
+    Returns:
+        tuple: (评估统计信息, COCO评估器)
+    """
     model.eval()
     criterion.eval()
 
@@ -112,6 +148,7 @@ def evaluate(model: torch.nn.Module, criterion: torch.nn.Module, postprocessors,
     #     )
 
     for samples, targets in metric_logger.log_every(data_loader, 10, header):
+        # 将数据移到指定设备
         samples = samples.to(device)
         targets = [{k: v.to(device) for k, v in t.items()} for t in targets]
 
@@ -162,7 +199,7 @@ def evaluate(model: torch.nn.Module, criterion: torch.nn.Module, postprocessors,
     if panoptic_evaluator is not None:
         panoptic_evaluator.synchronize_between_processes()
 
-    # accumulate predictions from all images
+    # 累积所有图像的预测结果
     if coco_evaluator is not None:
         coco_evaluator.accumulate()
         coco_evaluator.summarize()

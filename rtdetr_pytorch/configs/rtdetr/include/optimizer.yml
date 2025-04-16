@@ -1,36 +1,59 @@
-
+# 是否使用指数移动平均(EMA)
 use_ema: True 
+# EMA配置
 ema:
+  # 使用ModelEMA实现
   type: ModelEMA
+  # EMA衰减率
   decay: 0.9999
-  warmups: 2000
+  # 预热步数，在此步数之前不进行EMA更新(2000步)
+  warmups: 1
 
-
+# 是否检查未使用的参数，通常在使用DDP时需要设置
 find_unused_parameters: True 
 
-epoches: 72
+# 训练总轮数(72轮)
+epoches: 1
+# 梯度裁剪的最大范数
 clip_max_norm: 0.1
 
+# 优化器配置
 optimizer:
+  # 使用AdamW优化器
   type: AdamW
+  # 不同参数组的学习率和权重衰减设置
   params: 
+    # 主干网络参数组
     - 
+      # 匹配主干网络的参数
       params: 'backbone'
+      # 较小的学习率
       lr: 0.00001
+    # encoder中的偏置和归一化层权重参数组
     - 
+      # 使用正则表达式匹配encoder中的偏置和归一化层权重
       params: '^(?=.*encoder(?=.*bias|.*norm.*weight)).*$'
+      # 不使用权重衰减
       weight_decay: 0.
+    # decoder中的偏置和归一化层权重参数组
     -
+      # 使用正则表达式匹配decoder中的偏置和归一化层权重
       params: '^(?=.*decoder(?=.*bias|.*norm.*weight)).*$'
+      # 不使用权重衰减
       weight_decay: 0.
 
+  # 基础学习率
   lr: 0.0001
+  # Adam优化器的beta参数
   betas: [0.9, 0.999]
+  # 基础权重衰减率
   weight_decay: 0.0001
 
-
+# 学习率调度器配置
 lr_scheduler:
+  # 使用多步长学习率调度器
   type: MultiStepLR
+  # 在第1000轮时降低学习率
   milestones: [1000]
+  # 学习率衰减系数
   gamma: 0.1
-

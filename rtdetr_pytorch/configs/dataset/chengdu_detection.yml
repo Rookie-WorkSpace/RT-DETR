@@ -1,0 +1,61 @@
+# 任务类型:目标检测
+task: detection
+
+# 数据集类别数:17类
+num_classes: 17
+# 是否重映射MSCOCO类别ID
+remap_mscoco_category: True
+
+# 训练数据加载器配置
+train_dataloader: 
+  # 使用PyTorch的DataLoader
+  type: DataLoader
+  dataset:
+    # 使用COCO格式检测数据集
+    type: CocoDetection
+    # 训练图像文件夹路径
+    img_folder: \\?\C:\Users\Rooki\Desktop\AI\CV\RT-DETR\chengdu_dataset\train
+    # 训练标注文件路径
+    ann_file: \\?\C:\Users\Rooki\Desktop\AI\CV\RT-DETR\chengdu_dataset\train\_annotations.coco.json
+    # 数据转换配置
+    transforms:
+      # 使用Compose组合多个转换
+      type: Compose
+      # 具体转换操作待定
+      ops: ~
+  # 是否打乱数据
+  shuffle: True
+  # 批次大小:8
+  batch_size: 8
+  # 数据加载线程数:4
+  num_workers: 4
+  # 是否丢弃最后不完整的批次
+  drop_last: True 
+
+
+# 验证数据加载器配置
+val_dataloader:
+  # 使用PyTorch的DataLoader
+  type: DataLoader
+  dataset:
+    # 使用COCO格式检测数据集 
+    type: CocoDetection
+    # 验证图像文件夹路径
+    img_folder: \\?\C:\Users\Rooki\Desktop\AI\CV\RT-DETR\chengdu_dataset\valid
+    # 验证标注文件路径
+    ann_file: \\?\C:\Users\Rooki\Desktop\AI\CV\RT-DETR\chengdu_dataset\valid\_annotations.coco.json
+    # 数据转换配置
+    transforms:
+      # 使用Compose组合多个转换
+      type: Compose
+      # 具体转换操作待定
+      ops: ~ 
+
+  # 验证时不打乱数据
+  shuffle: False
+  # 验证批次大小:8
+  batch_size: 8
+  # 数据加载线程数:4
+  num_workers: 4
+  # 保留最后不完整的批次
+  drop_last: False

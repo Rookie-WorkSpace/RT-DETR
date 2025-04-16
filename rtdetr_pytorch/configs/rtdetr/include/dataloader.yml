@@ -1,39 +1,69 @@
+# COCO数据集类别数
 # num_classes: 91
+# 是否重映射MSCOCO类别ID
 # remap_mscoco_category: True
 
+# 训练数据加载器配置
 train_dataloader: 
-  dataset: 
+  dataset:
+    # 是否返回实例分割掩码
     return_masks: False
+    # 数据增强转换配置
     transforms:
       ops:
+        # 随机光度失真,概率0.5
         - {type: RandomPhotometricDistort, p: 0.5}
+        # 随机缩小图像并填充
         - {type: RandomZoomOut, fill: 0}
+        # 随机IoU裁剪,概率0.8
         - {type: RandomIoUCrop, p: 0.8}
+        # 过滤小于1像素的边界框
         - {type: SanitizeBoundingBox, min_size: 1}
+        # 随机水平翻转
         - {type: RandomHorizontalFlip}
+        # 调整图像大小到640x640
         - {type: Resize, size: [640, 640], }
+        # 备选的调整大小方案(已注释)
         # - {type: Resize, size: 639, max_size: 640}
         # - {type: PadToSize, spatial_size: 640}
+        # 转换为张量格式
         - {type: ToImageTensor}
+        # 转换数据类型
         - {type: ConvertDtype}
+        # 再次过滤小边界框
         - {type: SanitizeBoundingBox, min_size: 1}
+        # 转换边界框格式为中心点+宽高,并归一化
         - {type: ConvertBox, out_fmt: 'cxcywh', normalize: True}
+  # 是否打乱数据
   shuffle: True
+  # 批次大小
   batch_size: 4
+  # 数据加载线程数
   num_workers: 4
+  # 批处理函数
   collate_fn: default_collate_fn
 
 
+# 验证数据加载器配置  
 val_dataloader:
-  dataset: 
+  dataset:
+    # 数据转换配置
     transforms:
-      ops: 
+      ops:
+        # 备选的调整大小方案(已注释) 
         # - {type: Resize, size: 639, max_size: 640}
         # - {type: PadToSize, spatial_size: 640}
+        # 调整图像大小到640x640
         - {type: Resize, size: [640, 640]}
+        # 转换为张量格式
         - {type: ToImageTensor}
+        # 转换数据类型
         - {type: ConvertDtype}
+  # 不打乱验证数据
   shuffle: False
+  # 验证批次大小
   batch_size: 8
+  # 数据加载线程数
   num_workers: 4
+  # 批处理函数
   collate_fn: default_collate_fn

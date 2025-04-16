@@ -1,4 +1,4 @@
-'''by lyuwenyu
+'''作者: lyuwenyu
 '''
 
 import copy
@@ -16,6 +16,10 @@ __all__ = ['HybridEncoder']
 
 
 class ConvNormLayer(nn.Module):
+    """卷积归一化层
+    
+    包含卷积、批归一化和激活函数
+    """
     def __init__(self, ch_in, ch_out, kernel_size, stride, padding=None, bias=False, act=None):
         super().__init__()
         self.conv = nn.Conv2d(
@@ -33,6 +37,10 @@ class ConvNormLayer(nn.Module):
 
 
 class RepVggBlock(nn.Module):
+    """RepVGG块
+    
+    可重参数化的VGG块,包含3x3和1x1卷积分支
+    """
     def __init__(self, ch_in, ch_out, act='relu'):
         super().__init__()
         self.ch_in = ch_in
@@ -50,6 +58,10 @@ class RepVggBlock(nn.Module):
         return self.act(y)
 
     def convert_to_deploy(self):
+        """转换为部署模式
+        
+        将多分支结构重参数化为单个卷积
+        """
         if not hasattr(self, 'conv'):
             self.conv = nn.Conv2d(self.ch_in, self.ch_out, 3, 1, padding=1)
 
@@ -60,18 +72,24 @@ class RepVggBlock(nn.Module):
         # self.__delattr__('conv2')
 
     def get_equivalent_kernel_bias(self):
+        """获取等效的卷积核和偏置
+        
+        将多分支结构融合为等效的单个卷积参数
+        """
         kernel3x3, bias3x3 = self._fuse_bn_tensor(self.conv1)
         kernel1x1, bias1x1 = self._fuse_bn_tensor(self.conv2)
         
         return kernel3x3 + self._pad_1x1_to_3x3_tensor(kernel1x1), bias3x3 + bias1x1
 
     def _pad_1x1_to_3x3_tensor(self, kernel1x1):
+        """将1x1卷积核填充为3x3大小"""
         if kernel1x1 is None:
             return 0
         else:
             return F.pad(kernel1x1, [1, 1, 1, 1])
 
     def _fuse_bn_tensor(self, branch: ConvNormLayer):
+        """融合BN层参数到卷积层"""
         if branch is None:
             return 0, 0
         kernel = branch.conv.weight
@@ -86,6 +104,10 @@ class RepVggBlock(nn.Module):
 
 
 class CSPRepLayer(nn.Module):
+    """CSP RepVGG层
+    
+    Cross Stage Partial网络中的RepVGG层
+    """
     def __init__(self,
                  in_channels,
                  out_channels,
@@ -114,6 +136,10 @@ class CSPRepLayer(nn.Module):
 
 # transformer
 class TransformerEncoderLayer(nn.Module):
+    """Transformer编码器层
+    
+    包含自注意力和前馈网络
+    """
     def __init__(self,
                  d_model,
                  nhead,
@@ -138,6 +164,7 @@ class TransformerEncoderLayer(nn.Module):
 
     @staticmethod
     def with_pos_embed(tensor, pos_embed):
+        """添加位置编码"""
         return tensor if pos_embed is None else tensor + pos_embed
 
     def forward(self, src, src_mask=None, pos_embed=None) -> torch.Tensor:
@@ -162,6 +189,10 @@ class TransformerEncoderLayer(nn.Module):
 
 
 class TransformerEncoder(nn.Module):
+    """Transformer编码器
+    
+    由多个编码器层堆叠而成
+    """
     def __init__(self, encoder_layer, num_layers, norm=None):
         super(TransformerEncoder, self).__init__()
         self.layers = nn.ModuleList([copy.deepcopy(encoder_layer) for _ in range(num_layers)])
@@ -181,6 +212,10 @@ class TransformerEncoder(nn.Module):
 
 @register
 class HybridEncoder(nn.Module):
+    """混合编码器
+    
+    结合CNN和Transformer的特征提取器
+    """
     def __init__(self,
                  in_channels=[512, 1024, 2048],
                  feat_strides=[8, 16, 32],
@@ -208,7 +243,7 @@ class HybridEncoder(nn.Module):
         self.out_channels = [hidden_dim for _ in range(len(in_channels))]
         self.out_strides = feat_strides
         
-        # channel projection
+        # 通道投影
         self.input_proj = nn.ModuleList()
         for in_channel in in_channels:
             self.input_proj.append(
@@ -218,7 +253,7 @@ class HybridEncoder(nn.Module):
                 )
             )
 
-        # encoder transformer
+        # 编码器transformer
         encoder_layer = TransformerEncoderLayer(
             hidden_dim, 
             nhead=nhead,
@@ -230,7 +265,7 @@ class HybridEncoder(nn.Module):
             TransformerEncoder(copy.deepcopy(encoder_layer), num_encoder_layers) for _ in range(len(use_encoder_idx))
         ])
 
-        # top-down fpn
+        # 自顶向下FPN
         self.lateral_convs = nn.ModuleList()
         self.fpn_blocks = nn.ModuleList()
         for _ in range(len(in_channels) - 1, 0, -1):
@@ -239,7 +274,7 @@ class HybridEncoder(nn.Module):
                 CSPRepLayer(hidden_dim * 2, hidden_dim, round(3 * depth_mult), act=act, expansion=expansion)
             )
 
-        # bottom-up pan
+        # 自底向上PAN
         self.downsample_convs = nn.ModuleList()
         self.pan_blocks = nn.ModuleList()
         for _ in range(len(in_channels) - 1):
@@ -253,6 +288,10 @@ class HybridEncoder(nn.Module):
         self._reset_parameters()
 
     def _reset_parameters(self):
+        """重置参数
+        
+        为评估模式预计算位置编码
+        """
         if self.eval_spatial_size:
             for idx in self.use_encoder_idx:
                 stride = self.feat_strides[idx]
@@ -264,8 +303,7 @@ class HybridEncoder(nn.Module):
 
     @staticmethod
     def build_2d_sincos_position_embedding(w, h, embed_dim=256, temperature=10000.):
-        '''
-        '''
+        """构建2D正弦余弦位置编码"""
         grid_w = torch.arange(int(w), dtype=torch.float32)
         grid_h = torch.arange(int(h), dtype=torch.float32)
         grid_w, grid_h = torch.meshgrid(grid_w, grid_h, indexing='ij')
@@ -281,14 +319,21 @@ class HybridEncoder(nn.Module):
         return torch.concat([out_w.sin(), out_w.cos(), out_h.sin(), out_h.cos()], dim=1)[None, :, :]
 
     def forward(self, feats):
+        """前向传播
+        
+        1. 特征投影
+        2. Transformer编码
+        3. FPN特征融合
+        4. PAN特征融合
+        """
         assert len(feats) == len(self.in_channels)
         proj_feats = [self.input_proj[i](feat) for i, feat in enumerate(feats)]
         
-        # encoder
+        # 编码器处理
         if self.num_encoder_layers > 0:
             for i, enc_ind in enumerate(self.use_encoder_idx):
                 h, w = proj_feats[enc_ind].shape[2:]
-                # flatten [B, C, H, W] to [B, HxW, C]
+                # 将 [B, C, H, W] 展平为 [B, HxW, C]
                 src_flatten = proj_feats[enc_ind].flatten(2).permute(0, 2, 1)
                 if self.training or self.eval_spatial_size is None:
                     pos_embed = self.build_2d_sincos_position_embedding(
@@ -300,7 +345,7 @@ class HybridEncoder(nn.Module):
                 proj_feats[enc_ind] = memory.permute(0, 2, 1).reshape(-1, self.hidden_dim, h, w).contiguous()
                 # print([x.is_contiguous() for x in proj_feats ])
 
-        # broadcasting and fusion
+        # 特征广播和融合
         inner_outs = [proj_feats[-1]]
         for idx in range(len(self.in_channels) - 1, 0, -1):
             feat_high = inner_outs[0]
