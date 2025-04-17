@@ -232,13 +232,13 @@ class HybridEncoder(nn.Module):
                  act='silu',
                  eval_spatial_size=None):
         super().__init__()
-        self.in_channels = in_channels
-        self.feat_strides = feat_strides
-        self.hidden_dim = hidden_dim
-        self.use_encoder_idx = use_encoder_idx
-        self.num_encoder_layers = num_encoder_layers
-        self.pe_temperature = pe_temperature
-        self.eval_spatial_size = eval_spatial_size
+        self.in_channels = in_channels  # 输入通道数
+        self.feat_strides = feat_strides  # 特征图步幅
+        self.hidden_dim = hidden_dim  # 隐藏维度
+        self.use_encoder_idx = use_encoder_idx  # 使用编码器索引
+        self.num_encoder_layers = num_encoder_layers  # 编码器层数
+        self.pe_temperature = pe_temperature  # 位置编码温度
+        self.eval_spatial_size = eval_spatial_size  # 评估空间大小
 
         self.out_channels = [hidden_dim for _ in range(len(in_channels))]
         self.out_strides = feat_strides

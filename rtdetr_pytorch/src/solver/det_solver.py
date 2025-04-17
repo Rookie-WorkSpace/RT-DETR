@@ -27,7 +27,7 @@ class DetSolver(BaseSolver):
         
         # 计算模型参数量
         n_parameters = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
-        print('模型参数数量:', n_parameters)
+        print(f'Model parameters: {n_parameters}')
 
         # 获取验证集的COCO API接口
         base_ds = get_coco_api_from_dataset(self.val_dataloader.dataset)
@@ -36,6 +36,7 @@ class DetSolver(BaseSolver):
 
         start_time = time.time()
         # 开始训练循环
+        print(f'Total epochs: {args.epoches}')
         for epoch in range(self.last_epoch + 1, args.epoches):
             # 如果是分布式训练,设置采样器epoch
             if dist.is_dist_available_and_initialized():

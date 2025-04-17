@@ -136,10 +136,10 @@ def warp_model(model, find_unused_parameters=False, sync_bn=False,):
     返回:
         封装后的模型
     """
-    if is_dist_available_and_initialized():
-        rank = get_rank()
-        model = nn.SyncBatchNorm.convert_sync_batchnorm(model) if sync_bn else model 
-        model = DDP(model, device_ids=[rank], output_device=rank, find_unused_parameters=find_unused_parameters)
+    if is_dist_available_and_initialized(): # 如果分布式环境可用且已初始化
+        rank = get_rank()   # 获取当前进程的序号
+        model = nn.SyncBatchNorm.convert_sync_batchnorm(model) if sync_bn else model    # 同步批归一化
+        model = DDP(model, device_ids=[rank], output_device=rank, find_unused_parameters=find_unused_parameters)    # 分布式训练
     return model
 
 

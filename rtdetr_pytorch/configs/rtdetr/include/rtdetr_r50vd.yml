@@ -1,81 +1,84 @@
+# 任务类型为目标检测
 task: detection
 
+# 模型、损失函数和后处理器的类名
 model: RTDETR
-criterion: SetCriterion
+criterion: SetCriterion  
 postprocessor: RTDETRPostProcessor
 
+# RTDETR模型配置
+RTDETR:
+  backbone: PResNet  # 主干网络
+  encoder: HybridEncoder  # 编码器
+  decoder: RTDETRTransformer  # 解码器
+  multi_scale: [480, 512, 544, 576, 608, 640, 640, 640, 672, 704, 736, 768, 800]  # 多尺度训练尺寸
 
-RTDETR: 
-  backbone: PResNet
-  encoder: HybridEncoder
-  decoder: RTDETRTransformer
-  multi_scale: [480, 512, 544, 576, 608, 640, 640, 640, 672, 704, 736, 768, 800]
-
+# PResNet主干网络配置
 PResNet:
-  depth: 50
-  variant: d
-  freeze_at: 0
-  return_idx: [1, 2, 3]
-  num_stages: 4
-  freeze_norm: True
-  pretrained: True 
+  depth: 50  # 网络深度
+  variant: d  # 变体类型
+  freeze_at: 0  # 冻结层数
+  return_idx: [1, 2, 3]  # 返回特征层的索引
+  num_stages: 4  # 网络阶段数
+  freeze_norm: True  # 是否冻结归一化层
+  pretrained: True  # 是否使用预训练权重
 
+# HybridEncoder混合编码器配置
 HybridEncoder:
-  in_channels: [512, 1024, 2048]
-  feat_strides: [8, 16, 32]
+  in_channels: [512, 1024, 2048]  # 输入通道数
+  feat_strides: [8, 16, 32]  # 特征步长
 
-  # intra
-  hidden_dim: 256
-  use_encoder_idx: [2]
-  num_encoder_layers: 1
-  nhead: 8
-  dim_feedforward: 1024
-  dropout: 0.
-  enc_act: 'gelu'
-  pe_temperature: 10000
+  # 内部编码器参数
+  hidden_dim: 256  # 隐藏层维度
+  use_encoder_idx: [2]  # 使用的编码器层索引
+  num_encoder_layers: 1  # 编码器层数
+  nhead: 8  # 注意力头数
+  dim_feedforward: 1024  # 前馈网络维度
+  dropout: 0.  # dropout比率
+  enc_act: 'gelu'  # 激活函数
+  pe_temperature: 10000  # 位置编码温度参数
   
-  # cross
-  expansion: 1.0
-  depth_mult: 1
-  act: 'silu'
+  # 交叉编码器参数
+  expansion: 1.0  # 扩展比例
+  depth_mult: 1  # 深度乘数
+  act: 'silu'  # 激活函数
 
-  # eval
-  eval_spatial_size: [640, 640]
+  # 评估参数
+  eval_spatial_size: [640, 640]  # 评估时的空间尺寸
 
-
+# RTDETRTransformer解码器配置
 RTDETRTransformer:
-  feat_channels: [256, 256, 256]
-  feat_strides: [8, 16, 32]
-  hidden_dim: 256
-  num_levels: 3
+  feat_channels: [256, 256, 256]  # 特征通道数
+  feat_strides: [8, 16, 32]  # 特征步长
+  hidden_dim: 256  # 隐藏层维度
+  num_levels: 3  # 特征层级数
 
-  num_queries: 300
+  num_queries: 300  # 查询数量
 
-  num_decoder_layers: 6
-  num_denoising: 100
+  num_decoder_layers: 6  # 解码器层数
+  num_denoising: 100  # 去噪查询数量
   
-  eval_idx: -1
-  eval_spatial_size: [640, 640]
+  eval_idx: -1  # 评估使用的层索引
+  eval_spatial_size: [640, 640]  # 评估时的空间尺寸
 
-
+# 是否使用Focal Loss
 use_focal_loss: True
 
+# 后处理器配置
 RTDETRPostProcessor:
-  num_top_queries: 300
+  num_top_queries: 300  # 保留的顶部查询数量
 
-
+# 损失函数配置
 SetCriterion:
-  weight_dict: {loss_vfl: 1, loss_bbox: 5, loss_giou: 2,}
-  losses: ['vfl', 'boxes', ]
-  alpha: 0.75
-  gamma: 2.0
+  weight_dict: {loss_vfl: 1, loss_bbox: 5, loss_giou: 2,}  # 各损失项权重
+  losses: ['vfl', 'boxes', ]  # 使用的损失类型
+  alpha: 0.75  # focal loss的alpha参数
+  gamma: 2.0  # focal loss的gamma参数
 
+  # 匹配器配置
   matcher:
-    type: HungarianMatcher
-    weight_dict: {cost_class: 2, cost_bbox: 5, cost_giou: 2}
-    # use_focal_loss: True 
-    alpha: 0.25
-    gamma: 2.0
-
-
+    type: HungarianMatcher  # 匈牙利匹配器
+    weight_dict: {cost_class: 2, cost_bbox: 5, cost_giou: 2}  # 匹配代价权重
+    alpha: 0.25  # focal loss的alpha参数
+    gamma: 2.0  # focal loss的gamma参数
 
