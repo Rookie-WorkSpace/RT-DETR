@@ -3,36 +3,36 @@ train_dataloader:
   dataset: 
     transforms:
       ops:
-        - {type: RandomPhotometricDistort, p: 0.5}
-        - {type: RandomZoomOut, fill: 0}
-        - {type: RandomIoUCrop, p: 0.8}
-        - {type: SanitizeBoundingBoxes, min_size: 1}
-        - {type: RandomHorizontalFlip}
-        - {type: Resize, size: [640, 640], }
-        - {type: SanitizeBoundingBoxes, min_size: 1}
-        - {type: ConvertPILImage, dtype: 'float32', scale: True}   
-        - {type: ConvertBoxes, fmt: 'cxcywh', normalize: True}
+        - {type: RandomPhotometricDistort, p: 0.5}  # 随机光度扭曲,概率0.5
+        - {type: RandomZoomOut, fill: 0}  # 随机缩小,填充值为0
+        - {type: RandomIoUCrop, p: 0.8}  # 随机IoU裁剪,概率0.8
+        - {type: SanitizeBoundingBoxes, min_size: 1}  # 清理边界框,最小尺寸为1
+        - {type: RandomHorizontalFlip}  # 随机水平翻转
+        - {type: Resize, size: [640, 640], }  # 调整图像大小为640x640
+        - {type: SanitizeBoundingBoxes, min_size: 1}  # 再次清理边界框
+        - {type: ConvertPILImage, dtype: 'float32', scale: True}  # 转换为float32格式,并进行归一化   
+        - {type: ConvertBoxes, fmt: 'cxcywh', normalize: True}  # 转换边界框格式为中心点坐标+宽高,并归一化
       policy:
         name: stop_epoch
-        epoch: 71 # epoch in [71, ~) stop `ops`
+        epoch: 71  # 当epoch>=71时停止使用以下数据增强
         ops: ['RandomPhotometricDistort', 'RandomZoomOut', 'RandomIoUCrop']
   
   collate_fn:
     type: BatchImageCollateFuncion
-    scales: [480, 512, 544, 576, 608, 640, 640, 640, 672, 704, 736, 768, 800]
-    stop_epoch: 71 # epoch in [71, ~) stop `multiscales`
+    scales: [480, 512, 544, 576, 608, 640, 640, 640, 672, 704, 736, 768, 800]  # 多尺度训练的尺度列表
+    stop_epoch: 71  # 当epoch>=71时停止使用多尺度训练
 
-  shuffle: True
-  total_batch_size: 16 # total batch size equals to 16 (4 * 4)
-  num_workers: 4
+  shuffle: True  # 打乱数据
+  total_batch_size: 4  # 总批次大小为16(4 GPUs * 4)
+  num_workers: 4  # 数据加载的进程数
 
 
-val_dataloader:
+val_dataloader:  # 验证数据加载器配置
   dataset: 
     transforms:
       ops: 
-        - {type: Resize, size: [640, 640]}
-        - {type: ConvertPILImage, dtype: 'float32', scale: True}   
-  shuffle: False
-  total_batch_size: 32
-  num_workers: 4
+        - {type: Resize, size: [640, 640]}  # 调整验证图像大小为640x640
+        - {type: ConvertPILImage, dtype: 'float32', scale: True}  # 转换为float32并归一化   
+  shuffle: False  # 不打乱验证数据
+  total_batch_size: 4 # 验证的批次大小
+  num_workers: 4  # 验证数据加载的进程数

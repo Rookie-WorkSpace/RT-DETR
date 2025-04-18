@@ -12,5 +12,6 @@ __include__: [
   './include/rtdetr_r50vd.yml',
 ]
 
+epoches: 100
 # 模型输出目录
 output_dir: ./output/rtdetr_r50vd_6x_chengdu

@@ -39,7 +39,8 @@ class CocoDetection(torchvision.datasets.CocoDetection, DetDataset):
         img, target = self.load_item(idx)
         if self._transforms is not None:
             img, target, _ = self._transforms(img, target, self)
-        return img, target
+        img_tensor = torchvision.transforms.ToTensor()(img)
+        return img_tensor, target
 
     def load_item(self, idx):
         image, target = super(CocoDetection, self).__getitem__(idx)
@@ -256,6 +257,27 @@ mscoco_category2name = {
     88: 'teddy bear',
     89: 'hair drier',
     90: 'toothbrush'
+}
+
+# 成都数据集的类别映射
+mscoco_category2name = {
+    0: '划痕',
+    1: '吊紧',
+    2: '拼接间隙',
+    3: '水渍',
+    4: '水珠',
+    5: '爆线',
+    6: '破损',
+    7: '碰伤',
+    8: '红标签',
+    9: '线头',
+    10: '织物外漏',
+    11: '缝线鼓包(轻度)',
+    12: '脏污',
+    13: '褶皱（轻度）',
+    14: '褶皱（重度）',
+    15: '跳针',
+    16: '针眼'
 }
 
 mscoco_category2label = {k: i for i, k in enumerate(mscoco_category2name.keys())}

@@ -1,0 +1,70 @@
+__include__: [
+  '../dataset/coco_detection.yml',
+  '../runtime.yml',
+  './include/dataloader.yml',
+  './include/optimizer.yml',
+  './include/rtdetrv2_r50vd.yml',
+]
+
+
+output_dir: ./output/rtdetrv2_r50vd_6x_chengdu
+
+optimizer:
+  type: AdamW
+  params: 
+    - 
+      params: '^(?=.*backbone)(?!.*norm).*$'
+      lr: 0.00001
+    - 
+      params: '^(?=.*(?:encoder|decoder))(?=.*(?:norm|bn)).*$'
+      weight_decay: 0.
+
+  lr: 0.0001
+  betas: [0.9, 0.999]
+  weight_decay: 0.0001
+
+
+# epoches
+epoches: 100
+
+
+num_classes: 17
+remap_mscoco_category: True
+
+# dataset: detection
+train_dataloader: 
+  type: DataLoader
+  dataset: 
+    type: CocoDetection
+    img_folder: \\?\C:\Users\Rooki\Desktop\AI\CV\RT-DETR\chengdu_dataset\train_rename
+    ann_file: \\?\C:\Users\Rooki\Desktop\AI\CV\RT-DETR\chengdu_dataset\train_rename\_annotations.coco.json
+    return_masks: False
+    transforms:
+      type: Compose
+      ops: ~
+  total_batch_size: 1
+  shuffle: True
+  num_workers: 4
+  drop_last: True 
+  collate_fn:
+    type: BatchImageCollateFuncion
+
+
+val_dataloader:
+  type: DataLoader
+  dataset: 
+    type: CocoDetection
+    img_folder: \\?\C:\Users\Rooki\Desktop\AI\CV\RT-DETR\chengdu_dataset\valid_rename
+    ann_file: \\?\C:\Users\Rooki\Desktop\AI\CV\RT-DETR\chengdu_dataset\valid_rename\_annotations.coco.json
+    return_masks: False
+    transforms:
+      type: Compose
+      ops: ~ 
+  total_batch_size: 1
+  shuffle: False
+  num_workers: 4
+  drop_last: False
+  collate_fn:
+    type: BatchImageCollateFuncion
+
+

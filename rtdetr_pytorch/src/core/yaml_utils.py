@@ -69,50 +69,67 @@ def extract_schema(cls: type):
 
 
 def create(type_or_name, **kwargs):
+    '''根据类型名称或类创建实例
+    
+    Args:
+        type_or_name (type|str): 类型或类名
+        **kwargs: 创建实例时传入的参数
+        
+    Returns:
+        object: 创建的实例对象
+        
+    Raises:
+        ValueError: 当模块未注册或注入配置缺失时抛出
     '''
-    '''
+    # 检查输入参数类型是类或字符串
     assert type(type_or_name) in (type, str), 'create should be class or name.'
 
+    # 获取类名
     name = type_or_name if isinstance(type_or_name, str) else type_or_name.__name__
 
+    # 检查类是否已注册
     if name in GLOBAL_CONFIG:
+        # 如果是函数直接返回
         if hasattr(GLOBAL_CONFIG[name], '__dict__'):
             return GLOBAL_CONFIG[name]
     else:
         raise ValueError('The module {} is not registered'.format(name))
 
+    # 获取类的配置信息
     cfg = GLOBAL_CONFIG[name]
 
+    # 处理type风格的配置
     if isinstance(cfg, dict) and 'type' in cfg:
         _cfg: dict = GLOBAL_CONFIG[cfg['type']]
-        _cfg.update(cfg) # update global cls default args 
-        _cfg.update(kwargs) # TODO
+        _cfg.update(cfg) # 更新全局类默认参数
+        _cfg.update(kwargs) 
         name = _cfg.pop('type')
-        
         return create(name)
 
-
+    # 获取类对象和初始化参数
     cls = getattr(cfg['_pymodule'], name)
     argspec = inspect.getfullargspec(cls.__init__)
     arg_names = [arg for arg in argspec.args if arg != 'self']
     
+    # 构建类初始化参数
     cls_kwargs = {}
     cls_kwargs.update(cfg)
     
-    # shared var
+    # 处理共享变量
     for k in cfg['_share']:
         if k in GLOBAL_CONFIG:
             cls_kwargs[k] = GLOBAL_CONFIG[k]
         else:
             cls_kwargs[k] = cfg[k]
 
-    # inject
+    # 处理需要注入的配置
     for k in cfg['_inject']:
         _k = cfg[k]
 
         if _k is None:
             continue
 
+        # 处理字符串类型的注入
         if isinstance(_k, str):            
             if _k not in GLOBAL_CONFIG:
                 raise ValueError(f'Missing inject config of {_k}.')
@@ -124,6 +141,7 @@ def create(type_or_name, **kwargs):
             else:
                 cls_kwargs[k] = _cfg 
 
+        # 处理字典类型的注入
         elif isinstance(_k, dict):
             if 'type' not in _k.keys():
                 raise ValueError(f'Missing inject for `type` style.')
@@ -132,19 +150,18 @@ def create(type_or_name, **kwargs):
             if _type not in GLOBAL_CONFIG:
                 raise ValueError(f'Missing {_type} in inspect stage.')
 
-            # TODO modified inspace, maybe get wrong result for using `> 1`
+            # 更新配置并创建实例
             _cfg: dict = GLOBAL_CONFIG[_type]
-            # _cfg_copy = copy.deepcopy(_cfg)
-            _cfg.update(_k) # update 
+            _cfg.update(_k)
             cls_kwargs[k] = create(_type)
-            # _cfg.update(_cfg_copy) # resume
 
         else:
             raise ValueError(f'Inject does not support {_k}')
 
-
+    # 只保留类初始化需要的参数
     cls_kwargs = {n: cls_kwargs[n] for n in arg_names}
 
+    # 创建并返回实例
     return cls(**cls_kwargs)
 
 
@@ -192,12 +209,12 @@ def merge_dict(dct, another_dct):
 
 def merge_config(config, another_cfg=None):
     """
-    Merge config into global config or another_cfg.
+    将配置合并到全局配置或另一个配置中。
 
-    Args:
-        config (dict): Config to be merged.
+    参数:
+        config (dict): 需要被合并的配置。
 
-    Returns: global config
+    返回值: 全局配置
     """
     global GLOBAL_CONFIG
     dct = GLOBAL_CONFIG if another_cfg is None else another_cfg

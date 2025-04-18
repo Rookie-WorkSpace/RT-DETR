@@ -27,6 +27,8 @@ class DetSolver(BaseSolver):
 
         start_time = time.time()
         start_epcoch = self.last_epoch + 1
+
+        print(f'Total epochs: {args.epoches}')
         
         for epoch in range(start_epcoch, args.epoches):
 
